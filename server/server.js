@@ -42,11 +42,15 @@ app.get('/todos', (req, res) => {
 
 app.delete('/todos/:id', (req, res) => {
 	const id = req.params.id;
-	if (!ObjectID.isValid(id)) return req.status(404).send();
+	if (!ObjectID.isValid(id)) return req.status(404).send(); //if invalid ObjectID, return a 404 error as nothing can be deleted
 	Todo.findByIdAndRemove(id)
 		.then(
-			doc => res.send({ doc }), //If there is no problems, delete it and send the document data
-			err => res.status(404).send() // if the document doesn't exist, send a 404 and empty body
+			doc => {
+				if(!todo) {
+					return res.status(404).send(); //if the document doesn't exist, return a 404 status code and empty body
+				}
+				res.send({ doc }); //If there is no problems, delete it and send the document data
+			 } 
 		)
 		.catch(err => res.status(400).send()); 
 });
