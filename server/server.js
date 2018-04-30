@@ -67,14 +67,14 @@ app.patch('/todos/:id', (req, res) => {
 		body.completedAt = null;
 	}
 
-	Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+	Todo.findByIdAndUpdate(id, { $set: body }, { new: true }) //new: false returns the updated document and not the original, $set sets the body on the new document.
 		.then(todo => {
 			if (!todo) {
-				return res.status(404).send();
+				return res.status(404).send(); //if no todo, return a 404 error
 			}
-			res.send({ todo });
+			res.send({ todo }); //else send the updated todo 
 		})
-		.catch(e => res.status(400).send(e));
+		.catch(e => res.status(400).send(e)); //if any other errors return a 400 status code
 });
 
 app.listen(port, () => {

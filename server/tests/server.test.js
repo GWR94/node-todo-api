@@ -13,6 +13,8 @@ const todos = [
 	{
 		_id: new ObjectID(),
 		text: 'Second test todo',
+		completed: true,
+		completedAt: 123456		
 	},
 ];
 
@@ -134,6 +136,47 @@ describe('DELETE /todos/:id', () => {
 		let hexID = new ObjectID().toHexString();
 		request(app)
 			.delete(`/todos/${hexID}`)
+			.expect(404)
+			.end(done);
+	});
+});
+
+describe('PATCH /todos/:id', () => {
+	it('should update the todo and completedAt fields when updating', (done) => {
+		const id = todos[0]._id;
+		const text = 'updated first test todo';
+		request(app)
+			.patch(`/todos/${id}`)
+			.send({completed: true, text})
+			.expect(200)
+			.expect(res => {
+				expect(res.body.todo.text).toBe(text);
+				expect(res.body.todo.completed).toBe(true);
+				expect(typeof res.body.todo.completedAt).toBe('number');
+			})
+			.end(done);
+	});
+
+	it('should clear completedAt when todo is set to be not completed', (done) => {
+		const id = todos[1]._id.toHexString();
+		const text = 'updated second test todo';
+		request(app)
+			.patch(`/todos/${id}`)
+			.send({completed: false, text})
+			.expect(200)
+			.expect(res => {
+				expect(res.body.todo.text).toBe(text);
+				expect(res.body.todo.completed).toBe(false);
+				expect(res.body.todo.completedAt).toBeFalsy();
+			})
+			.end(done); 			
+	});
+
+	it('should not update anything when an incorrect objectID is input', (done) => {
+		const text = 'test fail';
+		request(app)
+			.patch('/todos/abc123')
+			.send({completed: false, text})
 			.expect(404)
 			.end(done);
 	});
