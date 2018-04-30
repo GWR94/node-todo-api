@@ -1,6 +1,7 @@
-var express = require('express');
-var bodyParser = require('body-parser');
-var { ObjectID } = require('mongodb');
+const _ = require('lodash');
+const express = require('express');
+const bodyParser = require('body-parser');
+const { ObjectID } = require('mongodb');
 
 var { mongoose } = require('./db/mongoose');
 var { Todo } = require('./models/todo');
@@ -50,6 +51,30 @@ app.delete('/todos/:id', (req, res) => {
 			res.send({ todo }); //If there is no problems, delete it and send the document data
 		})
 		.catch(err => res.status(400).send());
+});
+
+app.patch('/todos/:id', (req, res) => {
+	const id = req.params.id;
+	const body = _.pick(req.body, ['text', 'completed']); //_.pick check the body for the values in the array. Doesn't return any values which are not in the array.
+	if (!ObjectID.isValid(id)) return res.status(404).send(); //if the req.params.id isn't a valid objectID, return a 404 error.
+
+	if (_.isBoolean(body.completed) && body.completed) {
+		//check if body.completed is a Boolean value, and if it is, if it's true, run the if statement.
+		body.completedAt = new Date().getTime(); //returns JS timestamp
+	} else {
+		//if not a boolean/not true
+		body.completed = false;
+		body.completedAt = null;
+	}
+
+	Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+		.then(todo => {
+			if (!todo) {
+				return res.status(404).send();
+			}
+			res.send({ todo });
+		})
+		.catch(e => res.status(400).send(e));
 });
 
 app.listen(port, () => {
