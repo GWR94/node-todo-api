@@ -4,6 +4,7 @@ const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
+const bcrypt = require('bcryptjs');
 
 var { mongoose } = require('./db/mongoose');
 var { Todo } = require('./models/todo');
@@ -15,7 +16,7 @@ const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-//: POST
+//: POST ://
 app.post('/todos', (req, res) => {
 	var todo = new Todo({
 		//Create a new document for the Todo collection with the req.body.text from the request
@@ -40,7 +41,18 @@ app.post('/users', (req, res) => {
 		});
 });
 
-//: GET
+app.post('/users/login', (req, res) => {
+	const { email, password } = _.pick(req.body, ['email', 'password']);
+	User.findByCredentials(email, password)
+		.then(user => {
+			return user.generateAuthToken().then(token => { //return so if theres an error it will be caught in the catch block
+				res.header('x-auth', token).send(user);
+			});
+		})
+		.catch(e => res.status(400).send(e));
+});
+
+//: GET ://
 app.get('/todos/:id', (req, res) => {
 	const id = req.params.id;
 	if (!ObjectID.isValid(id)) return res.status(404).send(); //if the req.params.id isn't a valid objectID, return a 404 error.
@@ -52,7 +64,8 @@ app.get('/todos/:id', (req, res) => {
 		.catch(err => res.status(400).send(err));
 });
 
-app.get('/users/me', authenticate, (req, res) => { //use authenticate middleware
+app.get('/users/me', authenticate, (req, res) => {
+	//use authenticate middleware
 	res.send(req.user);
 });
 
@@ -64,7 +77,7 @@ app.get('/todos', (req, res) => {
 	);
 });
 
-//: DELETE
+//: DELETE ://
 app.delete('/todos/:id', (req, res) => {
 	const id = req.params.id;
 	if (!ObjectID.isValid(id)) return res.status(404).send(); //if invalid ObjectID, return a 404 error as nothing can be deleted
@@ -78,7 +91,7 @@ app.delete('/todos/:id', (req, res) => {
 		.catch(err => res.status(400).send());
 });
 
-//: PATCH
+//: PATCH ://
 app.patch('/todos/:id', (req, res) => {
 	const id = req.params.id;
 	const body = _.pick(req.body, ['text', 'completed']); //_.pick check the body for the values in the array. Doesn't return any values which are not in the array.
@@ -103,6 +116,7 @@ app.patch('/todos/:id', (req, res) => {
 		.catch(e => res.status(400).send(e)); //if any other errors return a 400 status code
 });
 
+//: LISTEN ://
 app.listen(port, () => {
 	console.log(`Server is up on port ${port}`);
 });

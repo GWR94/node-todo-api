@@ -4,13 +4,13 @@ const bcrypt = require('bcryptjs');
 
 //: bcyrptJS
 var password = 'password123';
-// bcrypt.genSalt(10, (err, salt) => {
-// 	bcrypt.hash(password, salt, (err, hash) => {
-// 		console.log(hash);
-// 	});
-// });
+bcrypt.genSalt(10, (err, salt) => {
+	bcrypt.hash(password, salt, (err, hash) => {
+		console.log(hash);
+	});
+});
 
-var hashedPassword = '$2a$10$CGQL4FObRORDVePW/CfKheucLJAKzYH8h7KaFWSxZOed1u.5erAxS';
+var hashedPassword = '$2a$10$EuL4iqAlpC1960iIjpNaxuKQ5WqPXchyVDF9NgiqI8K2qVhGsfwe2';
 
 bcrypt.compare(password, hashedPassword, (err, res) => {
 	console.log(res);
