@@ -96,7 +96,7 @@ describe('DELETE /todos/:id', () => {
 			.expect(res => {
 				expect(res.body.todo._id).toBe(hexId);
 			})
-			.end((err, res) => {
+			.end((err) => {
 				if (err) {
 					return done(err);
 				}
@@ -285,11 +285,29 @@ describe('POST /users/login', () => {
 			.expect(res => {
 				expect(res.headers['x-auth']).toBeUndefined();
 			})
-			.end((err, res) => {
+			.end(err => {
 				if (err) return done(err);
 				User.findById(users[1]._id)
 					.then(user => {
 						expect(user.tokens.length).toBe(0);
+						done();
+					})
+					.catch(e => done(e));
+			});
+	});
+});
+
+describe('DELETE /users/me/token', () => {
+	it('should remove auth token on logout', done => {
+		request(app)
+			.delete('/users/me/token')
+			.set('x-auth', users[0].tokens[0].token) //set correct x-auth header
+			.expect(200)
+			.end(err => {
+				if (err) return done(err); //if any errors, return to catch block
+				User.findById(users[0]._id)
+					.then(user => {
+						expect(user.tokens.length).toBe(0); //expect there to be no token in tokens array
 						done();
 					})
 					.catch(e => done(e));

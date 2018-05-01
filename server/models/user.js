@@ -56,7 +56,7 @@ UserSchema.methods.generateAuthToken = function() {
 
 UserSchema.methods.removeToken = function(token) {
 	var user = this; //bind user to this
-	return user.update({
+	return user.update({ //return so can chain on a .then() call in server.js
 		$pull: { //search an array, if found remove it
 			tokens: { //check tokens array
 				token //if the token in tokens array is the same as the token sent to the function, remove the whole object
