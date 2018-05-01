@@ -73,14 +73,15 @@ UserSchema.statics.findByToken = function(token) {
 UserSchema.pre('save', function(next) {
 	var user = this;
 	if (user.isModified('password')) {
+		//check if the password has been modified
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(user.password, salt, (err, hash) => {
-				user.password = hash;
-				next();
+				user.password = hash; //set user.password to be the hashed password and not the plain text one
+				next(); //continue with operations
 			});
 		});
 	} else {
-		next();
+		next(); //password isn't modified, so just continue with operations
 	}
 });
 //Models let you predefine what types of data can be input, and if they are required or not etc

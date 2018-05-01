@@ -4,27 +4,11 @@ const request = require('supertest');
 const { ObjectID } = require('mongodb');
 const { app } = require('../server');
 const { Todo } = require('../models/todo');
+const { User } = require('../models/user');
+const { todos, populateTodos, users, populateUsers } = require('./seed/seed');
 
-const todos = [
-	{
-		_id: new ObjectID(),
-		text: 'First test todo',
-	},
-	{
-		_id: new ObjectID(),
-		text: 'Second test todo',
-		completed: true,
-		completedAt: 123456		
-	},
-];
-
-beforeEach(done => {
-	Todo.remove({})
-		.then(() => {
-			Todo.insertMany(todos);
-		})
-		.then(() => done());
-});
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /todos', () => {
 	it('should create a new todo', done => {
@@ -142,12 +126,12 @@ describe('DELETE /todos/:id', () => {
 });
 
 describe('PATCH /todos/:id', () => {
-	it('should update the todo and completedAt fields when updating', (done) => {
+	it('should update the todo and completedAt fields when updating', done => {
 		const id = todos[0]._id;
 		const text = 'updated first test todo';
 		request(app)
 			.patch(`/todos/${id}`)
-			.send({completed: true, text})
+			.send({ completed: true, text })
 			.expect(200)
 			.expect(res => {
 				expect(res.body.todo.text).toBe(text);
@@ -157,27 +141,111 @@ describe('PATCH /todos/:id', () => {
 			.end(done);
 	});
 
-	it('should clear completedAt when todo is set to be not completed', (done) => {
+	it('should clear completedAt when todo is set to be not completed', done => {
 		const id = todos[1]._id.toHexString();
 		const text = 'updated second test todo';
 		request(app)
 			.patch(`/todos/${id}`)
-			.send({completed: false, text})
+			.send({ completed: false, text })
 			.expect(200)
 			.expect(res => {
 				expect(res.body.todo.text).toBe(text);
 				expect(res.body.todo.completed).toBe(false);
 				expect(res.body.todo.completedAt).toBeFalsy();
 			})
-			.end(done); 			
+			.end(done);
 	});
 
-	it('should not update anything when an incorrect objectID is input', (done) => {
+	it('should not update anything when an incorrect objectID is input', done => {
 		const text = 'test fail';
 		request(app)
 			.patch('/todos/abc123')
-			.send({completed: false, text})
+			.send({ completed: false, text })
 			.expect(404)
+			.end(done);
+	});
+});
+
+describe('GET /users', () => {
+	it('should return user if authenticated', done => {
+		request(app)
+			.get('/users/me')
+			.set('x-auth', users[0].tokens[0].token) //set header
+			.expect(200)
+			.expect(res => {
+				expect(res.body._id).toBe(users[0]._id.toHexString());
+				expect(res.body.email).toBe(users[0].email);
+			})
+			.end(done);
+	});
+
+	it('should return a 401 if not authenticated', done => {
+		request(app)
+			.get('/users/me')
+			.expect(401)
+			.expect(res => {
+				expect(res.body).toEqual({});
+			})
+			.end(done);
+	});
+});
+
+describe('POST /users', () => {
+	it('should create a user', done => {
+		const email = 'example@example.com';
+		const password = 'password123';
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(200)
+			.expect(res => {
+				expect(res.headers['x-auth']).toBeTruthy();
+				expect(typeof res.body._id).toBe('string');
+				expect(res.body.email).toBe(email);
+			})
+			.end(err => {
+				if (err) return done(err);
+				User.findOne({ email }).then(user => {
+					expect(user).toBeTruthy();
+					expect(user.password).not.toBe(password);
+					done();
+				});
+			});
+	});
+
+	it('should return validation errors if email is invalid', done => {
+		const email = 'testfailingemail'; //should throw error as it's not a valid email
+		const password = 'password123';
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(400)
+			.expect(res => {
+				expect(res.body._message).toBe('User validation failed');
+			})
+			.end(done);
+	});
+
+	it('should return validation errors if password is invalid', done => {
+		const email = 'test@test.com';
+		const password = 'fail'; //should throw an error as it's too short
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(400)
+			.expect(res => {
+				expect(res.body._message).toBe('User validation failed');
+			})
+			.end(done);
+	});
+
+	it('should not create a user if email is in use', done => {
+		const email = 'james@example.com'; //email address is already in use
+		const password = 'password123';
+		request(app)
+			.post('/users')
+			.send({ email, password })
+			.expect(400)
 			.end(done);
 	});
 });
