@@ -1,10 +1,11 @@
 var env = process.env.NODE_ENV || 'development'; // if testing, env would be test, development for localhost, production for heroku
-console.log('env ******', env);
+console.log('*** environment:', env, '***');
 
-if (env === 'development') {
-	process.env.PORT = 3000;
-	process.env.MONGODB_URI = 'mongodb://localhost:27017/TodoApp'; //set MONGODB_URI to development database
-} else if (env === 'test') {
-	process.env.PORT = 3000;
-	process.env.MONGODB_URI = 'mongodb://localhost:27017/TodoAppTest'; //set MONGODB_URI to test database
+if(env === 'test' || env === 'development') {
+	var config = require('./config.json');
+	var envConfig = config[env];
+
+	Object.keys(envConfig).forEach((key) => {
+		process.env[key] = envConfig[key];
+	});
 }
