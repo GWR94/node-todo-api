@@ -88,7 +88,15 @@ app.delete('/todos/:id', (req, res) => {
 			}
 			res.send({ todo }); //If there is no problems, delete it and send the document data
 		})
-		.catch(err => res.status(400).send());
+		.catch(err => res.status(400).send(err));
+});
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+	req.user.removeToken(req.token).then(() => {
+		res.send();
+	}, (err) => {
+		res.status(400).send(err);
+	});
 });
 
 //: PATCH ://
